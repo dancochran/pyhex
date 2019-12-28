@@ -1,32 +1,28 @@
 import arcade
 from hexgridcell import HexGridCell
+from hexitem import HexItem
+from timeit import default_timer as timer
 
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
 BOARD_WIDTH = 5
 BOARD_HEIGHT = 4
-CELL_BLANK = 0
-CELL_UNSELECTED = 1
-CELL_SELECTED = 84
-NUM_HEX_CORNERS = 6
 CELL_RADIUS = 40
 
 class MyGame(arcade.Window):
-    mCells = [
-        [CELL_UNSELECTED, CELL_UNSELECTED, CELL_UNSELECTED, CELL_UNSELECTED, CELL_UNSELECTED],
-        [CELL_UNSELECTED, CELL_UNSELECTED, CELL_UNSELECTED, CELL_UNSELECTED, CELL_UNSELECTED],
-        [CELL_UNSELECTED, CELL_UNSELECTED, CELL_BLANK, CELL_UNSELECTED, CELL_UNSELECTED],
-        [CELL_UNSELECTED, CELL_UNSELECTED, CELL_UNSELECTED, CELL_UNSELECTED, CELL_UNSELECTED]
-    ]
-
-    mCornersX = []
-    mCornersY = []
+    mCells = []
 
     def __init__(self, width, height, title):
         super().__init__(width, height, title)
         self.mCellMetrics = HexGridCell(CELL_RADIUS)
         self.mcurselrow = 0
         self.mcurselcol = 0
+        cellrow = []
+        for j in range(BOARD_HEIGHT):
+            for i in range(BOARD_WIDTH):
+                cellrow.append(HexItem(i,j,CELL_RADIUS,HexItem.CELL_UNSELECTED))
+            self.mCells.append(cellrow)
+            cellrow = []
         arcade.set_background_color(arcade.color.AMAZON)
 
     def setup(self):
@@ -34,73 +30,47 @@ class MyGame(arcade.Window):
         pass
 
     def isInsideBoard(self, i, j):
-        return i >= 0 and i < BOARD_WIDTH and j >= 0 and j < BOARD_HEIGHT and self.mCells[j][i] != CELL_BLANK
+        return i >= 0 and i < BOARD_WIDTH and j >= 0 and j < BOARD_HEIGHT and self.mCells[j][i].getState() != HexItem.CELL_BLANK
 
     def  toggleCell(self, i, j):
-        self.mCells[self.mcurselrow][self.mcurselcol] = CELL_UNSELECTED 
-        self.mCells[j][i] = CELL_SELECTED if (self.mCells[j][i] == CELL_UNSELECTED) else CELL_UNSELECTED
+        print(f"toggleCell(): {i} , {j} , {self.mCells[j][i].getState()}")
+        self.mCells[self.mcurselrow][self.mcurselcol].setState(HexItem.CELL_UNSELECTED)
+        oldstate = self.mCells[j][i].getState()
+        if (oldstate is HexItem.CELL_UNSELECTED):
+            # DSC - this ALWAYS evals true, why?
+            print("toggleCell(): current state is UNSELECTED")
+
+        newstate = HexItem.CELL_SELECTED
+        if (oldstate is HexItem.CELL_SELECTED):
+            print("toggleCell(): current state is SELECTED")
+            newstate = HexItem.CELL_UNSELECTED
+        #self.mCells[j][i].setState(HexItem.CELL_SELECTED if (self.mCells[j][i].getState() == HexItem.CELL_UNSELECTED) else HexItem.CELL_UNSELECTED)
+        self.mCells[j][i].setState(newstate)
         self.mcurselrow = j
         self.mcurselcol = i
 
     def on_draw(self):
-        #print(f"on_draw(): entering, BOARD_HEIGHT = {BOARD_HEIGHT}")
+        start = timer()
         arcade.start_render()
-        tothex = 0
         for j in range(BOARD_HEIGHT):
-            #print(f"height iteration: {j}")
             for i in range(BOARD_WIDTH):
-                #print(f"width iteration: {i}")
-                self.mCellMetrics.setCellIndex(i, j)
-                if (self.mCells[j][i] != CELL_BLANK):
-                    tothex += 1
-                    self.mCellMetrics.computeCorners(self.mCornersX, self.mCornersY)
-                    #print(f"called computeCorners: {i}")
-                    #color = arcade.color.NAVY_BLUE if (self.mCells[j][i] == CELL_SELECTED) else arcade.color.GRAY
-                    color = arcade.color.NAVY_BLUE if (self.mCells[j][i] == CELL_SELECTED) else arcade.color.GRAY
-                    pointlist = []
-                    for k in range(NUM_HEX_CORNERS):
-                        #print(f"corners iteration: {k}")
-                        pointlist.append((self.mCornersX[k], self.mCornersY[k]))
-                    #print(pointlist)
-                    arcade.draw_polygon_filled(pointlist, color)
-                    arcade.draw_polygon_outline(pointlist, arcade.color.BLACK)
-
-                self.mCornersX.clear()
-                self.mCornersY.clear()
-
-        #print(f"tothex: {tothex}")
+                if (self.mCells[j][i].getState() != HexItem.CELL_BLANK):
+                    color = arcade.color.NAVY_BLUE if (self.mCells[j][i].getState() == HexItem.CELL_SELECTED) else arcade.color.GRAY
+                    arcade.draw_polygon_filled(self.mCells[j][i].getPointlist(), color)
+                    arcade.draw_polygon_outline(self.mCells[j][i].getPointlist(), arcade.color.BLACK)
+        
+        end = timer()
+        print(f"draw() time: {end - start}")
 
     def update(self, delta_time):
         pass
 
-    #def on_mouse_motion(self, x, y, dx, dy):
-
-    #def on_mouse_press(self, x, y, button, modifiers):
-        #print(f"clicked button number: {button}")
-        #if button == arcade.MOUSE_BUTTON_LEFT:
-
     def on_mouse_release(self, x, y, button, modifiers):
-        #print(f"released button number: {button}")
-        #if button == arcade.MOUSE_BUTTON_LEFT:
-        self.mCellMetrics.setCellByPoint(x, y)
-        clickI = self.mCellMetrics.getIndexI()
-        clickJ = self.mCellMetrics.getIndexJ()
+        clickI, clickJ = self.mCellMetrics.getCellByPoint(x, y)
 
         if (self.isInsideBoard(clickI, clickJ)):
             # toggle the clicked cell, can't be blank because of isInsideBoard
             self.toggleCell(clickI, clickJ)
-
-    #def on_key_press(self, key, modifiers):
-        #print(f"pressed key: {key}")
-        #if key == arcade.key.LEFT:
-        #elif key == arcade.key.RIGHT:
-        #elif key == arcade.key.UP:
-        #elif key == arcade.key.DOWN:
-
-    #def on_key_release(self, key, modifiers):
-        #print(f"released key: {key}")
-        #if key == arcade.key.LEFT or key == arcade.key.RIGHT:
-        #elif key == arcade.key.UP or key == arcade.key.DOWN:
 
 def main():
     game = MyGame(SCREEN_WIDTH, SCREEN_HEIGHT, 'Hex Map 1')
