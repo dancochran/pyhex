@@ -15,8 +15,8 @@ class MyGame(arcade.Window):
     def __init__(self, width, height, title):
         super().__init__(width, height, title)
         self.mCellMetrics = HexGridCell(CELL_RADIUS)
-        self.mcurselrow = 0
-        self.mcurselcol = 0
+        self.mcurselrow = -1 # initialization value only
+        self.mcurselcol = -1 # initialization value only
         cellrow = []
         for j in range(BOARD_HEIGHT):
             for i in range(BOARD_WIDTH):
@@ -34,18 +34,37 @@ class MyGame(arcade.Window):
 
     def  toggleCell(self, i, j):
         print(f"toggleCell(): {i} , {j} , {self.mCells[j][i].getState()}")
-        self.mCells[self.mcurselrow][self.mcurselcol].setState(HexItem.CELL_UNSELECTED)
-        oldstate = self.mCells[j][i].getState()
-        if (oldstate is HexItem.CELL_UNSELECTED):
-            # DSC - this ALWAYS evals true, why?
-            print("toggleCell(): current state is UNSELECTED")
+        print(f"toggleCell(): self.mcurselcol = {self.mcurselcol}, self.mcurselrow = {self.mcurselrow}")
 
-        newstate = HexItem.CELL_SELECTED
-        if (oldstate is HexItem.CELL_SELECTED):
-            print("toggleCell(): current state is SELECTED")
-            newstate = HexItem.CELL_UNSELECTED
-        #self.mCells[j][i].setState(HexItem.CELL_SELECTED if (self.mCells[j][i].getState() == HexItem.CELL_UNSELECTED) else HexItem.CELL_UNSELECTED)
-        self.mCells[j][i].setState(newstate)
+        cell_clicked = self.mCells[j][i]
+        old_state = cell_clicked.mState
+
+        # previously highlighted cell clicked
+        if i == self.mcurselcol and j == self.mcurselrow:
+            print('Case 1')
+            if old_state == HexItem.CELL_SELECTED:      # "is" compares two vars to see if they're the same object & can result in weird behavior sometimes
+                cell_clicked.mState = HexItem.CELL_UNSELECTED
+            elif old_state == HexItem.CELL_UNSELECTED:
+                cell_clicked.mState = HexItem.CELL_SELECTED
+
+        # new cell clicked
+        if i != self.mcurselcol or j != self.mcurselrow:
+            print('Case 2')
+            cell_clicked.mState = HexItem.CELL_SELECTED
+            if self.mcurselcol >= 0 and self.mcurselrow >= 0:
+                self.mCells[self.mcurselrow][self.mcurselcol].mState = HexItem.CELL_UNSELECTED
+
+    #    oldstate = self.mCells[j][i].getState()
+    #    if (oldstate is HexItem.CELL_UNSELECTED):
+    #        print("toggleCell(): current state is UNSELECTED")
+
+    #    newstate = HexItem.CELL_SELECTED
+    #    if (oldstate is HexItem.CELL_SELECTED):
+    #        print("toggleCell(): current state is SELECTED")
+    #        newstate = HexItem.CELL_UNSELECTED
+    #    #self.mCells[j][i].setState(HexItem.CELL_SELECTED if (self.mCells[j][i].getState() == HexItem.CELL_UNSELECTED) else HexItem.CELL_UNSELECTED)
+    #    self.mCells[j][i].setState(newstate)
+    #    self.mCells[self.mcurselrow][self.mcurselcol].setState(HexItem.CELL_UNSELECTED)
         self.mcurselrow = j
         self.mcurselcol = i
 
@@ -55,10 +74,10 @@ class MyGame(arcade.Window):
         for j in range(BOARD_HEIGHT):
             for i in range(BOARD_WIDTH):
                 if (self.mCells[j][i].getState() != HexItem.CELL_BLANK):
-                    color = arcade.color.NAVY_BLUE if (self.mCells[j][i].getState() == HexItem.CELL_SELECTED) else arcade.color.GRAY
+                    color = arcade.color.NAVY_BLUE if (self.mCells[j][i].mState == HexItem.CELL_SELECTED) else arcade.color.GRAY
                     arcade.draw_polygon_filled(self.mCells[j][i].getPointlist(), color)
                     arcade.draw_polygon_outline(self.mCells[j][i].getPointlist(), arcade.color.BLACK)
-        
+
         end = timer()
         print(f"draw() time: {end - start}")
 

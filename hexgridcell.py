@@ -22,7 +22,7 @@ class HexGridCell:
         ty = y - (ci % 2) * self.HEIGHT / 2
         cj = math.floor(ty / self.HEIGHT)
         cy = ty - self.HEIGHT * cj
-        
+
         if (cx > abs(self.RADIUS / 2 - self.RADIUS * cy / self.HEIGHT)):
             return (ci, cj)
         else:

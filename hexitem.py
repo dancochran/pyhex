@@ -40,7 +40,7 @@ class HexItem:
 
     def getCenterY(self):
         return self.mY + self.mHeight / 2
-    
+
     def getIndexI(self):
         return self.mI
 
